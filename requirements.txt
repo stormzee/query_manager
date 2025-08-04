@@ -1,0 +1,7 @@
+Flask==2.3.2
+Flask-SQLAlchemy==3.0.5
+psycopg2
+pandas
+openpyxl==3.1.2
+python-dotenv==1.0.0
+

@@ -1,0 +1,801 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="bg-white rounded-lg shadow-md overflow-hidden">
+    <div class="p-6 border-b border-gray-200">
+        <h2 class="text-2xl font-bold text-gray-800">Query Management</h2>
+        <p class="text-gray-600">Manage and organize your team queries</p>
+    </div>
+    
+    <div class="p-6">
+        <!-- Filter Section -->
+        <div class="mb-6 grid grid-cols-1 md:grid-cols-5 gap-4">
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Edit Type</label>
+                <select id="editTypeFilter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">All Edit Types</option>
+                    {% for type in edit_types %}
+                        <option value="{{ type }}">{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Visit Type</label>
+                <select id="visitTypeFilter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">All Visit Types</option>
+                    {% for type in visit_types %}
+                        <option value="{{ type }}">{{ type }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Form</label>
+                <select id="formFilter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">All Forms</option>
+                    {% for form in forms %}
+                        <option value="{{ form }}">{{ form }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Filter by Status</label>
+                <select id="statusFilter" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    <option value="">All Statuses</option>
+                    <option value="Pending">Pending</option>
+                    <option value="In Progress">In Progress</option>
+                    <option value="Resolved">Resolved</option>
+                    <option value="Closed">Closed</option>
+                </select>
+            </div>
+            
+            <div>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Search</label>
+                <input 
+                    type="text" 
+                    id="searchInput" 
+                    placeholder="Search queries..."
+                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                >
+            </div>
+        </div>
+        
+        <div class="mb-4 flex flex-wrap gap-2">
+            <button id="refreshBtn" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded">
+                Refresh
+            </button>
+            <button id="clearFiltersBtn" class="bg-yellow-500 hover:bg-yellow-600 text-white py-2 px-4 rounded">
+                Clear Filters
+            </button>
+        </div>
+        
+        <!-- Bulk Actions Section -->
+        <div id="bulkActions" class="mb-4 hidden bg-blue-50 p-4 rounded-lg border border-blue-200">
+            <div class="flex flex-wrap items-center justify-between gap-4">
+                <div class="text-blue-800 font-medium">
+                    <span id="selectedCount">0</span> queries selected
+                </div>
+                <div class="flex flex-wrap gap-2">
+                    <select id="bulkStatusSelect" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">Update Status</option>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                    <button id="applyBulkStatus" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">
+                        Apply
+                    </button>
+                    <button id="bulkEditBtn" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                        Bulk Edit
+                    </button>
+                    <button id="bulkExportBtn" class="bg-purple-600 hover:bg-purple-700 text-white py-2 px-4 rounded">
+                        Export
+                    </button>
+                    <button id="bulkDeleteBtn" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                        Delete
+                    </button>
+                    <button id="clearSelectionBtn" class="bg-gray-400 hover:bg-gray-500 text-white py-2 px-4 rounded">
+                        Clear Selection
+                    </button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Queries Table -->
+        <div class="overflow-x-auto">
+            <table class="min-w-full divide-y divide-gray-200">
+                <thead class="bg-gray-50">
+                    <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <input type="checkbox" id="selectAllCheckbox" class="rounded">
+                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Query ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preg ID</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Visit Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Edit Type</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Form</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Variable</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="queriesTableBody" class="bg-white divide-y divide-gray-200">
+                    <!-- Rows will be populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+        
+        <!-- Pagination -->
+        <div id="pagination" class="mt-6 flex justify-between items-center">
+            <button id="prevPage" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded disabled:opacity-50" disabled>
+                Previous
+            </button>
+            <span id="pageInfo" class="text-gray-600"></span>
+            <button id="nextPage" class="bg-gray-200 hover:bg-gray-300 text-gray-800 py-2 px-4 rounded disabled:opacity-50" disabled>
+                Next
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-2xl shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Edit Query</h3>
+            <form id="editForm">
+                <input type="hidden" id="editQueryId">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="editQueryID">
+                            Query ID
+                        </label>
+                        <input 
+                            type="text" 
+                            id="editQueryID" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            readonly
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="editPregID">
+                            Preg ID
+                        </label>
+                        <input 
+                            type="text" 
+                            id="editPregID" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            readonly
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="editEditType">
+                            Edit Type
+                        </label>
+                        <input 
+                            type="text" 
+                            id="editEditType" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            readonly
+                        >
+                    </div>
+                    <div>
+                        <label class="block text-gray-700 text-sm font-bold mb-2" for="editForm">
+                            Form
+                        </label>
+                        <input 
+                            type="text" 
+                            id="editForm" 
+                            class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            readonly
+                        >
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="editNotes">
+                        Notes
+                    </label>
+                    <textarea 
+                        id="editNotes" 
+                        rows="4"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Add your notes here..."
+                    ></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="editRemoveEdit">
+                        Remove Edit
+                    </label>
+                    <input 
+                        type="text" 
+                        id="editRemoveEdit" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    >
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="editStatus">
+                        Status
+                    </label>
+                    <select id="editStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancelEdit" class="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-blue-600 hover:bg-blue-700 text-white py-2 px-4 rounded">
+                        Save Changes
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Edit Modal -->
+<div id="bulkEditModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-11/12 max-w-md shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4">Bulk Edit Queries</h3>
+            <form id="bulkEditForm">
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="bulkEditType">
+                        Edit Type
+                    </label>
+                    <input 
+                        type="text" 
+                        id="bulkEditType" 
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Leave blank to keep current value"
+                    >
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="bulkNotes">
+                        Notes
+                    </label>
+                    <textarea 
+                        id="bulkNotes" 
+                        rows="3"
+                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        placeholder="Add notes to all selected queries"
+                    ></textarea>
+                </div>
+                <div class="mb-4">
+                    <label class="block text-gray-700 text-sm font-bold mb-2" for="bulkStatus">
+                        Status
+                    </label>
+                    <select id="bulkStatus" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">Don't change</option>
+                        <option value="Pending">Pending</option>
+                        <option value="In Progress">In Progress</option>
+                        <option value="Resolved">Resolved</option>
+                        <option value="Closed">Closed</option>
+                    </select>
+                </div>
+                <div class="flex justify-end space-x-3">
+                    <button type="button" id="cancelBulkEdit" class="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded">
+                        Cancel
+                    </button>
+                    <button type="submit" class="bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded">
+                        Apply to Selected
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Confirmation Modal -->
+<div id="confirmModal" class="fixed inset-0 bg-gray-600 bg-opacity-50 hidden overflow-y-auto h-full w-full z-50">
+    <div class="relative top-20 mx-auto p-5 border w-96 shadow-lg rounded-md bg-white">
+        <div class="mt-3">
+            <h3 class="text-lg font-medium text-gray-900 mb-4" id="confirmModalTitle">Confirm Action</h3>
+            <p class="text-gray-700 mb-6" id="confirmModalMessage">Are you sure you want to perform this action?</p>
+            <div class="flex justify-end space-x-3">
+                <button type="button" id="cancelConfirm" class="bg-gray-300 hover:bg-gray-400 text-gray-800 py-2 px-4 rounded">
+                    Cancel
+                </button>
+                <button type="button" id="confirmAction" class="bg-red-600 hover:bg-red-700 text-white py-2 px-4 rounded">
+                    Confirm
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    let currentPage = 1;
+    let currentEditType = '';
+    let currentVisitType = '';
+    let currentForm = '';
+    let currentStatus = '';
+    let currentSearch = '';
+    let selectedQueries = new Set();
+    
+    // DOM Elements
+    const editTypeFilter = document.getElementById('editTypeFilter');
+    const visitTypeFilter = document.getElementById('visitTypeFilter');
+    const formFilter = document.getElementById('formFilter');
+    const statusFilter = document.getElementById('statusFilter');
+    const searchInput = document.getElementById('searchInput');
+    const refreshBtn = document.getElementById('refreshBtn');
+    const clearFiltersBtn = document.getElementById('clearFiltersBtn');
+    const queriesTableBody = document.getElementById('queriesTableBody');
+    const prevPageBtn = document.getElementById('prevPage');
+    const nextPageBtn = document.getElementById('nextPage');
+    const pageInfo = document.getElementById('pageInfo');
+    const selectAllCheckbox = document.getElementById('selectAllCheckbox');
+    const bulkActions = document.getElementById('bulkActions');
+    const selectedCount = document.getElementById('selectedCount');
+    const bulkStatusSelect = document.getElementById('bulkStatusSelect');
+    const applyBulkStatus = document.getElementById('applyBulkStatus');
+    const bulkEditBtn = document.getElementById('bulkEditBtn');
+    const bulkExportBtn = document.getElementById('bulkExportBtn');
+    const bulkDeleteBtn = document.getElementById('bulkDeleteBtn');
+    const clearSelectionBtn = document.getElementById('clearSelectionBtn');
+    const editModal = document.getElementById('editModal');
+    const editForm = document.getElementById('editForm');
+    const cancelEditBtn = document.getElementById('cancelEdit');
+    const bulkEditModal = document.getElementById('bulkEditModal');
+    const bulkEditForm = document.getElementById('bulkEditForm');
+    const cancelBulkEditBtn = document.getElementById('cancelBulkEdit');
+    const confirmModal = document.getElementById('confirmModal');
+    const confirmModalTitle = document.getElementById('confirmModalTitle');
+    const confirmModalMessage = document.getElementById('confirmModalMessage');
+    const cancelConfirmBtn = document.getElementById('cancelConfirm');
+    const confirmActionBtn = document.getElementById('confirmAction');
+    
+    // Event Listeners
+    editTypeFilter.addEventListener('change', () => {
+        currentEditType = editTypeFilter.value;
+        currentPage = 1;
+        loadQueries();
+    });
+    
+    visitTypeFilter.addEventListener('change', () => {
+        currentVisitType = visitTypeFilter.value;
+        currentPage = 1;
+        loadQueries();
+    });
+    
+    formFilter.addEventListener('change', () => {
+        currentForm = formFilter.value;
+        currentPage = 1;
+        loadQueries();
+    });
+    
+    statusFilter.addEventListener('change', () => {
+        currentStatus = statusFilter.value;
+        currentPage = 1;
+        loadQueries();
+    });
+    
+    searchInput.addEventListener('input', debounce(() => {
+        currentSearch = searchInput.value;
+        currentPage = 1;
+        loadQueries();
+    }, 300));
+    
+    refreshBtn.addEventListener('click', () => {
+        loadQueries();
+    });
+    
+    clearFiltersBtn.addEventListener('click', () => {
+        editTypeFilter.value = '';
+        visitTypeFilter.value = '';
+        formFilter.value = '';
+        statusFilter.value = '';
+        searchInput.value = '';
+        currentEditType = '';
+        currentVisitType = '';
+        currentForm = '';
+        currentStatus = '';
+        currentSearch = '';
+        currentPage = 1;
+        loadQueries();
+    });
+    
+    prevPageBtn.addEventListener('click', () => {
+        if (currentPage > 1) {
+            currentPage--;
+            loadQueries();
+        }
+    });
+    
+    nextPageBtn.addEventListener('click', () => {
+        currentPage++;
+        loadQueries();
+    });
+    
+    selectAllCheckbox.addEventListener('change', function() {
+        const checkboxes = document.querySelectorAll('.query-checkbox');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = this.checked;
+            const queryId = parseInt(checkbox.dataset.queryId);
+            if (this.checked) {
+                selectedQueries.add(queryId);
+            } else {
+                selectedQueries.delete(queryId);
+            }
+        });
+        updateBulkActions();
+    });
+    
+    applyBulkStatus.addEventListener('click', () => {
+        const newStatus = bulkStatusSelect.value;
+        if (!newStatus) {
+            alert('Please select a status');
+            return;
+        }
+        if (selectedQueries.size === 0) {
+            alert('Please select at least one query');
+            return;
+        }
+        
+        if (confirm(`Update status to "${newStatus}" for ${selectedQueries.size} queries?`)) {
+            bulkUpdateStatus(Array.from(selectedQueries), newStatus);
+        }
+    });
+    
+    bulkEditBtn.addEventListener('click', () => {
+        if (selectedQueries.size === 0) {
+            alert('Please select at least one query');
+            return;
+        }
+        bulkEditModal.classList.remove('hidden');
+    });
+    
+    bulkExportBtn.addEventListener('click', () => {
+        if (selectedQueries.size === 0) {
+            alert('Please select at least one query');
+            return;
+        }
+        bulkExport(Array.from(selectedQueries));
+    });
+    
+    bulkDeleteBtn.addEventListener('click', () => {
+        if (selectedQueries.size === 0) {
+            alert('Please select at least one query');
+            return;
+        }
+        
+        showConfirmModal(
+            'Delete Queries',
+            `Are you sure you want to delete ${selectedQueries.size} queries? This action cannot be undone.`,
+            () => {
+                bulkDelete(Array.from(selectedQueries));
+                confirmModal.classList.add('hidden');
+            }
+        );
+    });
+    
+    clearSelectionBtn.addEventListener('click', () => {
+        clearSelection();
+    });
+    
+    cancelEditBtn.addEventListener('click', () => {
+        editModal.classList.add('hidden');
+    });
+    
+    cancelBulkEditBtn.addEventListener('click', () => {
+        bulkEditModal.classList.add('hidden');
+    });
+    
+    cancelConfirmBtn.addEventListener('click', () => {
+        confirmModal.classList.add('hidden');
+    });
+    
+    editForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const queryId = document.getElementById('editQueryId').value;
+        // const editType = document.getElementById('editEditType').value;
+        const notes = document.getElementById('editNotes').value;
+        const form = document.getElementById('editNotes').value;
+        const removeEdit = document.getElementById('editRemoveEdit').value;
+        const status = document.getElementById('editStatus').value;
+        
+        try {
+            const response = await fetch(`/api/query/${queryId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    // EditType: editType,
+                    Notes: notes,
+                    RemoveEdit: removeEdit,
+                    status: status
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                editModal.classList.add('hidden');
+                loadQueries();
+                alert('Query updated successfully');
+            } else {
+                alert('Error updating query: ' + result.message);
+            }
+        } catch (error) {
+            alert('Error updating query: ' + error.message);
+        }
+    });
+    
+    bulkEditForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        // const editType = document.getElementById('bulkEditType').value;
+        const notes = document.getElementById('bulkNotes').value;
+        const status = document.getElementById('bulkStatus').value;
+        
+        const updates = {};
+        // if (editType) updates.EditType = editType;
+        if (notes) updates.Notes = notes;
+        if (status) updates.status = status;
+        
+        if (Object.keys(updates).length === 0) {
+            alert('Please fill in at least one field');
+            return;
+        }
+        
+        try {
+            const response = await fetch('/api/bulk/edit', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    query_ids: Array.from(selectedQueries),
+                    updates
+                })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                bulkEditModal.classList.add('hidden');
+                clearBulkEditForm();
+                loadQueries();
+                alert(result.message);
+            } else {
+                alert('Error updating queries: ' + result.message);
+            }
+        } catch (error) {
+            alert('Error updating queries: ' + error.message);
+        }
+    });
+    
+    // Load queries function
+    async function loadQueries() {
+        try {
+            const params = new URLSearchParams();
+            params.append('page', currentPage);
+            if (currentEditType) params.append('edit_type', currentEditType);
+            if (currentVisitType) params.append('visit_type', currentVisitType);
+            if (currentForm) params.append('form', currentForm);
+            if (currentStatus) params.append('status', currentStatus);
+            if (currentSearch) params.append('search', currentSearch);
+            
+            const response = await fetch(`/api/queries?${params.toString()}`);
+            const data = await response.json();
+            
+            // Update table
+            queriesTableBody.innerHTML = '';
+            data.queries.forEach(query => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <input type="checkbox" class="query-checkbox rounded" data-query-id="${query.id}">
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900 font-medium">${query.QueryID}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${query.PregID || ''}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${query.VisitDate || ''}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${query.EditType || ''}</td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${query.Form || ''}</td>
+                    <td class="px-6 py-4 text-sm text-gray-500 max-w-xs truncate" title="${query.Variable_Name || ''}">${query.Variable_Name || ''}</td>
+                    <td class="px-6 py-4 whitespace-nowrap">
+                        <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full 
+                            ${getStatusClass(query.status)}">
+                            ${query.status || 'Pending'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <button onclick="openEditModal(${query.id})" class="text-blue-600 hover:text-blue-900" data-query='${JSON.stringify(query)}'>
+                            Edit
+                        </button>
+                    </td>
+                `;
+                queriesTableBody.appendChild(row);
+                
+                // Add event listener to checkbox
+                const checkbox = row.querySelector('.query-checkbox');
+                checkbox.addEventListener('change', function() {
+                    const queryId = parseInt(this.dataset.queryId);
+                    if (this.checked) {
+                        selectedQueries.add(queryId);
+                    } else {
+                        selectedQueries.delete(queryId);
+                    }
+                    updateBulkActions();
+                    updateSelectAllCheckbox();
+                });
+                
+                // Add event listener to edit button
+                const editButton = row.querySelector('button[data-query]');
+                editButton.addEventListener('click', function(e) {
+                    e.preventDefault();
+                    const queryData = JSON.parse(this.getAttribute('data-query'));
+                    openEditModal(queryData);
+                });
+            });
+            
+            // Update pagination
+            prevPageBtn.disabled = !data.has_prev;
+            nextPageBtn.disabled = !data.has_next;
+            pageInfo.textContent = `Page ${data.page} of ${data.pages}`;
+            
+            // Restore checkbox states
+            restoreCheckboxStates();
+            updateBulkActions();
+            updateSelectAllCheckbox();
+            
+        } catch (error) {
+            console.error('Error loading queries:', error);
+            queriesTableBody.innerHTML = '<tr><td colspan="9" class="px-6 py-4 text-center text-red-500">Error loading queries</td></tr>';
+        }
+    }
+    
+    // Helper functions
+    function getStatusClass(status) {
+        switch (status) {
+            case 'Pending': return 'bg-yellow-100 text-yellow-800';
+            case 'In Progress': return 'bg-blue-100 text-blue-800';
+            case 'Resolved': return 'bg-green-100 text-green-800';
+            case 'Closed': return 'bg-gray-100 text-gray-800';
+            default: return 'bg-gray-100 text-gray-800';
+        }
+    }
+    
+    function updateBulkActions() {
+        if (selectedQueries.size > 0) {
+            bulkActions.classList.remove('hidden');
+            selectedCount.textContent = selectedQueries.size;
+        } else {
+            bulkActions.classList.add('hidden');
+        }
+    }
+    
+    function updateSelectAllCheckbox() {
+        const allCheckboxes = document.querySelectorAll('.query-checkbox');
+        const checkedCheckboxes = document.querySelectorAll('.query-checkbox:checked');
+        selectAllCheckbox.checked = allCheckboxes.length > 0 && allCheckboxes.length === checkedCheckboxes.length;
+        selectAllCheckbox.indeterminate = checkedCheckboxes.length > 0 && checkedCheckboxes.length < allCheckboxes.length;
+    }
+    
+    function restoreCheckboxStates() {
+        document.querySelectorAll('.query-checkbox').forEach(checkbox => {
+            const queryId = parseInt(checkbox.dataset.queryId);
+            checkbox.checked = selectedQueries.has(queryId);
+        });
+    }
+    
+    function clearSelection() {
+        selectedQueries.clear();
+        document.querySelectorAll('.query-checkbox').forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        selectAllCheckbox.checked = false;
+        selectAllCheckbox.indeterminate = false;
+        updateBulkActions();
+    }
+    
+    function clearBulkEditForm() {
+        document.getElementById('bulkEditType').value = '';
+        document.getElementById('bulkNotes').value = '';
+        document.getElementById('bulkStatus').value = '';
+    }
+    
+    function showConfirmModal(title, message, onConfirm) {
+        confirmModalTitle.textContent = title;
+        confirmModalMessage.textContent = message;
+        confirmModal.classList.remove('hidden');
+        
+        // Remove previous event listener and add new one
+        const newConfirmAction = function() {
+            onConfirm();
+            confirmActionBtn.removeEventListener('click', newConfirmAction);
+        };
+        confirmActionBtn.addEventListener('click', newConfirmAction);
+    }
+    
+    // Bulk operations functions
+    async function bulkUpdateStatus(queryIds, status) {
+        try {
+            const response = await fetch('/api/bulk/status', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query_ids: queryIds, status })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                loadQueries();
+                alert(result.message);
+            } else {
+                alert('Error updating status: ' + result.message);
+            }
+        } catch (error) {
+            alert('Error updating status: ' + error.message);
+        }
+    }
+    
+    async function bulkDelete(queryIds) {
+        try {
+            const response = await fetch('/api/bulk/delete', {
+                method: 'DELETE',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ query_ids: queryIds })
+            });
+            
+            const result = await response.json();
+            if (result.success) {
+                clearSelection();
+                loadQueries();
+                alert(result.message);
+            } else {
+                alert('Error deleting queries: ' + result.message);
+            }
+        } catch (error) {
+            alert('Error deleting queries: ' + error.message);
+        }
+    }
+    
+    async function bulkExport(queryIds) {
+        try {
+            const url = `/api/bulk/export?query_ids=${queryIds.join(',')}`;
+            window.open(url, '_blank');
+        } catch (error) {
+            alert('Error exporting queries: ' + error.message);
+        }
+    }
+    
+    // Open edit modal
+    function openEditModal(query) {
+        console.log('Opening edit modal with query:', query); // Debug log
+        document.getElementById('editQueryId').value = query.id;
+        document.getElementById('editQueryID').value = query.QueryID || '';
+        document.getElementById('editPregID').value = query.PregID || '';
+        document.getElementById('editEditType').value = query.EditType || '';
+        document.getElementById('editForm').value = query.Form || '';
+        document.getElementById('editNotes').value = query.Notes || '';
+        document.getElementById('editRemoveEdit').value = query.RemoveEdit || '';
+        document.getElementById('editStatus').value = query.status || 'Pending';
+        editModal.classList.remove('hidden');
+    }
+    
+    // Debounce function for search
+    function debounce(func, wait) {
+        let timeout;
+        return function executedFunction(...args) {
+            const later = () => {
+                clearTimeout(timeout);
+                func(...args);
+            };
+            clearTimeout(timeout);
+            timeout = setTimeout(later, wait);
+        };
+    }
+    
+    // Initial load
+    loadQueries();
+</script>
+{% endblock %}
